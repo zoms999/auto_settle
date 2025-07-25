@@ -160,9 +160,9 @@ const AddDealModal: React.FC<AddDealModalProps> = ({ isOpen, onClose, onSuccess 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-6xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden border border-white/20 animate-in slide-in-from-bottom-4 duration-300">
-        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200 overflow-y-auto">
+      <div className="relative w-full max-w-6xl bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl my-2 sm:my-8 border border-white/20 animate-in slide-in-from-bottom-4 duration-300 max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-4rem)]">
+        <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[calc(100vh-4rem)]">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200/50 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 backdrop-blur-md">
             <div className="flex items-center space-x-4">
@@ -188,8 +188,8 @@ const AddDealModal: React.FC<AddDealModalProps> = ({ isOpen, onClose, onSuccess 
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-gray-50/50 to-blue-50/30">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-gray-50/50 to-blue-50/30 min-h-0">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-4">
               {/* Left Section - Basic Info */}
               <div className="space-y-6">
                 <div className="bg-white/90 backdrop-blur-md border border-white/30 rounded-xl p-6 shadow-lg">
