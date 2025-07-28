@@ -7,7 +7,8 @@ type DealWithRelations = Deal & {
 
 export function getNextAction(deal: DealWithRelations): string | null {
   const checklists = deal.checklists as {
-    quoteSent?: boolean;
+    quoteInitial?: boolean;
+    quoteFinal?: boolean;
     contractSent?: boolean;
     contractReceived?: boolean;
     codeIssued?: boolean;
@@ -16,8 +17,19 @@ export function getNextAction(deal: DealWithRelations): string | null {
 
   // Calculate financial status
   const totalQuote = deal.services.reduce((sum, service) => {
-    const details = service.details as { price?: number, count?: number };
-    return sum + (Number(details?.price) || 0) * (Number(details?.count) || 0);
+    const details = service.details as { 
+      price?: number, 
+      count?: number, 
+      activityCost?: number 
+    };
+    
+    if (service.type === 'ACTIVITY') {
+      return sum + (Number(details?.activityCost) || 0);
+    } else if (service.type === 'ETC' || service.type === 'REPORT') {
+      return sum + (Number(details?.price) || 0);
+    } else {
+      return sum + (Number(details?.price) || 0) * (Number(details?.count) || 0);
+    }
   }, 0);
 
   const totalPaid = deal.paymentSchedules
@@ -46,8 +58,11 @@ export function getNextAction(deal: DealWithRelations): string | null {
   }
 
   if (deal.status === 'PROSPECT') {
-    if (!checklists.quoteSent) {
-      return '견적서 발송 필요';
+    if (!checklists.quoteInitial) {
+      return '초기 견적서 발송 필요';
+    }
+    if (!checklists.quoteFinal) {
+      return '확정 견적서 발송 필요';
     }
     return '계약 진행 확인';
   }

@@ -6,6 +6,8 @@ import { getNextAction } from '@/lib/actions';
 
 interface DealGridProps {
     deals: (Deal & { services: Service[], paymentSchedules: PaymentSchedule[] })[];
+    onEdit?: (deal: Deal & { services: Service[], paymentSchedules: PaymentSchedule[] }) => void;
+    onDelete?: (dealId: string) => void;
 }
 
 interface ExpandedDealData extends Deal {
@@ -13,7 +15,7 @@ interface ExpandedDealData extends Deal {
     paymentSchedules: PaymentSchedule[];
 }
 
-const DealGrid: React.FC<DealGridProps> = ({ deals }) => {
+const DealGrid: React.FC<DealGridProps> = ({ deals, onEdit, onDelete }) => {
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
     const toggleRow = (dealId: string) => {
@@ -39,10 +41,21 @@ const DealGrid: React.FC<DealGridProps> = ({ deals }) => {
 
     const calculateQuote = (services: Service[]) => {
         return services.reduce((sum, service) => {
-            const details = service.details as { price?: number, count?: number };
-            const price = Number(details?.price) || 0;
-            const count = Number(details?.count) || 0;
-            return sum + (price * count);
+            const details = service.details as { 
+                price?: number, 
+                count?: number, 
+                activityCost?: number 
+            };
+            
+            if (service.type === 'ACTIVITY') {
+                return sum + (Number(details?.activityCost) || 0);
+            } else if (service.type === 'ETC' || service.type === 'REPORT') {
+                return sum + (Number(details?.price) || 0);
+            } else {
+                const price = Number(details?.price) || 0;
+                const count = Number(details?.count) || 0;
+                return sum + (price * count);
+            }
         }, 0);
     };
 
@@ -67,8 +80,8 @@ const DealGrid: React.FC<DealGridProps> = ({ deals }) => {
     const renderExpandedContent = (deal: ExpandedDealData) => {
         const contactInfo = deal.contactInfo as { phone?: string, email?: string } || {};
         const checklists = deal.checklists as {
-            programs?: string[],
-            quoteSent?: boolean,
+            quoteInitial?: boolean,
+            quoteFinal?: boolean,
             contractSent?: boolean,
             contractReceived?: boolean,
             codeIssued?: boolean,
@@ -165,13 +178,32 @@ const DealGrid: React.FC<DealGridProps> = ({ deals }) => {
                         <div className="space-y-4">
                             {deal.services.map((service, index) => {
                                 const details = service.details as { 
-                                    version?: string, 
-                                    target?: string, 
-                                    price?: number, 
-                                    count?: number,
-                                    content?: string,
-                                    memo?: string 
+                                    target?: string;
+                                    price?: number;
+                                    count?: number;
+                                    memo?: string;
+                                    premium?: boolean;
+                                    standard?: boolean;
+                                    duration?: string;
+                                    resultMethod?: string;
+                                    content?: string;
+                                    schedule?: string;
+                                    dispatchCount?: number;
+                                    inPerson?: boolean;
+                                    remote?: boolean;
+                                    activityCost?: number;
+                                    submitDate?: string;
                                 } || {};
+                                
+                                const calculateServiceCost = () => {
+                                    if (service.type === 'ACTIVITY') {
+                                        return details.activityCost || 0;
+                                    } else if (service.type === 'ETC' || service.type === 'REPORT') {
+                                        return details.price || 0;
+                                    } else {
+                                        return (details.price || 0) * (details.count || 0);
+                                    }
+                                };
                                 
                                 return (
                                     <div key={service.id} className="bg-white p-4 rounded-lg border border-gray-200">
@@ -180,28 +212,102 @@ const DealGrid: React.FC<DealGridProps> = ({ deals }) => {
                                         </h5>
                                         
                                         <div className="grid grid-cols-2 gap-3 text-sm">
-                                            <div>
-                                                <span className="text-gray-600 korean-text">버전/내용:</span>
-                                                <p className="text-gray-900 korean-text">{details.version || details.content || '-'}</p>
-                                            </div>
+                                            {service.type === 'TEST' && (
+                                                <>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">버전:</span>
+                                                        <p className="text-gray-900 korean-text">
+                                                            {details.premium && 'Premium'} {details.standard && 'Standard'} {!details.premium && !details.standard && '-'}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">검사진행기간:</span>
+                                                        <p className="text-gray-900 korean-text">{details.duration || '-'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">결과지운영방식:</span>
+                                                        <p className="text-gray-900 korean-text">{details.resultMethod || '-'}</p>
+                                                    </div>
+                                                </>
+                                            )}
+                                            
+                                            {service.type === 'LECTURE' && (
+                                                <>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">강연내용:</span>
+                                                        <p className="text-gray-900 korean-text">{details.content || '-'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">일정:</span>
+                                                        <p className="text-gray-900 korean-text">{details.schedule || '-'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">파견인원:</span>
+                                                        <p className="text-gray-900 korean-text">{details.dispatchCount || 0}명</p>
+                                                    </div>
+                                                </>
+                                            )}
+                                            
+                                            {(service.type === 'CONSULTING' || service.type === 'ACTIVITY') && (
+                                                <>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">진행방식:</span>
+                                                        <p className="text-gray-900 korean-text">
+                                                            {details.inPerson && '대면'} {details.remote && '비대면'} {!details.inPerson && !details.remote && '-'}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">일정:</span>
+                                                        <p className="text-gray-900 korean-text">{details.schedule || '-'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">파견인원:</span>
+                                                        <p className="text-gray-900 korean-text">{details.dispatchCount || 0}명</p>
+                                                    </div>
+                                                </>
+                                            )}
+                                            
+                                            {service.type === 'ETC' && (
+                                                <div className="col-span-2">
+                                                    <span className="text-gray-600 korean-text">내용:</span>
+                                                    <p className="text-gray-900 korean-text">{details.content || '-'}</p>
+                                                </div>
+                                            )}
+                                            
+                                            {service.type === 'REPORT' && (
+                                                <div>
+                                                    <span className="text-gray-600 korean-text">제출일:</span>
+                                                    <p className="text-gray-900 korean-text">
+                                                        {details.submitDate ? new Date(details.submitDate).toLocaleDateString('ko-KR') : '-'}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            
                                             <div>
                                                 <span className="text-gray-600 korean-text">대상:</span>
                                                 <p className="text-gray-900 korean-text">{details.target || '-'}</p>
                                             </div>
-                                            <div>
-                                                <span className="text-gray-600 korean-text">단가:</span>
-                                                <p className="text-gray-900 korean-text">₩{(details.price || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div>
-                                                <span className="text-gray-600 korean-text">수량:</span>
-                                                <p className="text-gray-900 korean-text">{details.count || 0}명</p>
-                                            </div>
+                                            
+                                            {service.type !== 'ETC' && service.type !== 'REPORT' && (
+                                                <>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">단가:</span>
+                                                        <p className="text-gray-900 korean-text">₩{(details.price || 0).toLocaleString()}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600 korean-text">인원:</span>
+                                                        <p className="text-gray-900 korean-text">{details.count || 0}명</p>
+                                                    </div>
+                                                </>
+                                            )}
+                                            
                                             <div className="col-span-2">
                                                 <span className="text-gray-600 korean-text">비용:</span>
                                                 <p className="text-green-600 font-semibold korean-text">
-                                                    ₩{((details.price || 0) * (details.count || 0)).toLocaleString()}
+                                                    ₩{calculateServiceCost().toLocaleString()}
                                                 </p>
                                             </div>
+                                            
                                             {details.memo && (
                                                 <div className="col-span-2">
                                                     <span className="text-gray-600 korean-text">메모:</span>
@@ -222,34 +328,53 @@ const DealGrid: React.FC<DealGridProps> = ({ deals }) => {
                         <div className="space-y-4">
                             <div className="bg-white p-4 rounded-lg border border-gray-200">
                                 <h5 className="font-medium text-gray-900 korean-text mb-3">견적서/계약서 공유</h5>
-                                <div className="space-y-2">
-                                    <label className="flex items-center">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={checklists.quoteSent || false}
-                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                            disabled
-                                        />
-                                        <span className="ml-2 text-sm text-gray-700 korean-text">견적서 전달</span>
-                                    </label>
-                                    <label className="flex items-center">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={checklists.contractSent || false}
-                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                            disabled
-                                        />
-                                        <span className="ml-2 text-sm text-gray-700 korean-text">계약서 전달</span>
-                                    </label>
-                                    <label className="flex items-center">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={checklists.contractReceived || false}
-                                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                            disabled
-                                        />
-                                        <span className="ml-2 text-sm text-gray-700 korean-text">계약서 회수</span>
-                                    </label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <h6 className="text-xs font-semibold text-gray-600 mb-2 korean-text">견적서</h6>
+                                        <div className="space-y-1">
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={checklists.quoteInitial || false}
+                                                    className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                                    disabled
+                                                />
+                                                <span className="ml-2 text-xs text-gray-700 korean-text">초기</span>
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={checklists.quoteFinal || false}
+                                                    className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                                    disabled
+                                                />
+                                                <span className="ml-2 text-xs text-gray-700 korean-text">확정</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 className="text-xs font-semibold text-gray-600 mb-2 korean-text">계약서</h6>
+                                        <div className="space-y-1">
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={checklists.contractSent || false}
+                                                    className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                                    disabled
+                                                />
+                                                <span className="ml-2 text-xs text-gray-700 korean-text">전달</span>
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={checklists.contractReceived || false}
+                                                    className="h-3 w-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                                    disabled
+                                                />
+                                                <span className="ml-2 text-xs text-gray-700 korean-text">회수</span>
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -334,12 +459,13 @@ const DealGrid: React.FC<DealGridProps> = ({ deals }) => {
                 <div className="grid grid-cols-12 gap-4 px-6 py-4 text-sm font-semibold text-gray-700 korean-text">
                     <div className="col-span-1"></div>
                     <div className="col-span-1">순번</div>
-                    <div className="col-span-3">단체명</div>
+                    <div className="col-span-2">단체명</div>
                     <div className="col-span-2">담당자</div>
                     <div className="col-span-1">견적가</div>
                     <div className="col-span-1">입금액</div>
                     <div className="col-span-1">미수금</div>
                     <div className="col-span-2">다음 액션</div>
+                    <div className="col-span-1">관리</div>
                 </div>
             </div>
 
@@ -356,12 +482,12 @@ const DealGrid: React.FC<DealGridProps> = ({ deals }) => {
                     return (
                         <div key={deal.id} className="bg-white">
                             {/* 요약 행 */}
-                            <div 
-                                className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                                onClick={() => toggleRow(deal.id)}
-                            >
+                            <div className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
                                 <div className="col-span-1 flex items-center">
-                                    <button className="p-1 hover:bg-gray-200 rounded transition-colors duration-150">
+                                    <button 
+                                        className="p-1 hover:bg-gray-200 rounded transition-colors duration-150"
+                                        onClick={() => toggleRow(deal.id)}
+                                    >
                                         <svg 
                                             className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                                             fill="none" 
@@ -375,7 +501,7 @@ const DealGrid: React.FC<DealGridProps> = ({ deals }) => {
                                 <div className="col-span-1 flex items-center text-sm text-gray-600 korean-text">
                                     {index + 1}
                                 </div>
-                                <div className="col-span-3 flex items-center">
+                                <div className="col-span-2 flex items-center">
                                     <div>
                                         <div className="font-semibold text-gray-900 korean-text">{deal.companyName}</div>
                                         <div className="text-xs text-gray-500 korean-text">
@@ -406,6 +532,38 @@ const DealGrid: React.FC<DealGridProps> = ({ deals }) => {
                                         </span>
                                     ) : (
                                         <span className="text-gray-400 text-xs korean-text">없음</span>
+                                    )}
+                                </div>
+                                <div className="col-span-1 flex items-center space-x-2">
+                                    {onEdit && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onEdit(deal);
+                                            }}
+                                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors duration-150"
+                                            title="수정"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                    {onDelete && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (confirm(`${deal.companyName} 계약을 삭제하시겠습니까?`)) {
+                                                    onDelete(deal.id);
+                                                }
+                                            }}
+                                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-150"
+                                            title="삭제"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
                                     )}
                                 </div>
                             </div>

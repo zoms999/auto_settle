@@ -3,6 +3,7 @@
 import { signOut, useSession } from "next-auth/react";
 import DealGrid from "./components/DealGrid";
 import AddDealModal from "./components/AddDealModal";
+import EditDealModal from "./components/EditDealModal";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Deal, PaymentSchedule, Service } from "@prisma/client";
@@ -12,11 +13,28 @@ export default function Home() {
   const [deals, setDeals] = useState<(Deal & { services: Service[], paymentSchedules: PaymentSchedule[] })[]>([]);
   const [activeTab, setActiveTab] = useState<string>('ONGOING');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<(Deal & { services: Service[], paymentSchedules: PaymentSchedule[] }) | null>(null);
 
   const fetchDeals = () => {
     axios.get('/api/deals').then(response => {
       setDeals(response.data);
     });
+  };
+
+  const handleEditDeal = (deal: Deal & { services: Service[], paymentSchedules: PaymentSchedule[] }) => {
+    setSelectedDeal(deal);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteDeal = async (dealId: string) => {
+    try {
+      await axios.delete(`/api/deals?id=${dealId}`);
+      fetchDeals();
+    } catch (error) {
+      console.error('계약 삭제 실패:', error);
+      alert('계약 삭제에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   useEffect(() => {
@@ -199,8 +217,8 @@ export default function Home() {
                       key={tab.key}
                       onClick={() => setActiveTab(tab.key)}
                       className={`px-6 py-3 text-sm font-semibold rounded-lg whitespace-nowrap transition-all duration-200 korean-text focus-visible:focus ${activeTab === tab.key
-                          ? 'text-white bg-gradient-to-r from-indigo-600 to-blue-600 shadow-md hover:shadow-lg'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                        ? 'text-white bg-gradient-to-r from-indigo-600 to-blue-600 shadow-md hover:shadow-lg'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
                         }`}
                       role="tab"
                       aria-selected={activeTab === tab.key}
@@ -258,7 +276,11 @@ export default function Home() {
               </div>
             </div>
             <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-white/30 overflow-hidden">
-              <DealGrid deals={filteredDeals} />
+              <DealGrid
+                deals={filteredDeals}
+                onEdit={handleEditDeal}
+                onDelete={handleDeleteDeal}
+              />
             </div>
           </div>
         </div>
@@ -269,6 +291,17 @@ export default function Home() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={fetchDeals}
+      />
+
+      {/* Edit Deal Modal */}
+      <EditDealModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedDeal(null);
+        }}
+        onSuccess={fetchDeals}
+        deal={selectedDeal}
       />
     </div>
   );
