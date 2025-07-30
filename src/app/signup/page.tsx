@@ -48,8 +48,11 @@ export default function SignupPage() {
       });
       
       router.push("/login?message=회원가입이 완료되었습니다. 로그인해주세요.");
-    } catch (error: any) {
-      setError(error.response?.data?.error || "회원가입 중 오류가 발생했습니다.");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as { response?: { data?: { error?: string } } }).response?.data?.error 
+        : "회원가입 중 오류가 발생했습니다.";
+      setError(errorMessage || "회원가입 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }

@@ -176,7 +176,7 @@ const DealGrid: React.FC<DealGridProps> = ({ deals, onEdit, onDelete }) => {
                         <h4 className="font-semibold text-gray-900 korean-text mb-4">프로그램 상세</h4>
                         
                         <div className="space-y-4">
-                            {deal.services.map((service, index) => {
+                            {deal.services.map((service) => {
                                 const details = service.details as { 
                                     target?: string;
                                     price?: number;

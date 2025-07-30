@@ -1,48 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { getServerSession, Session } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 const prisma = new PrismaClient();
+
+interface PaymentScheduleInput {
+  dueDate: string;
+  amount: number;
+  description?: string;
+  isPaid?: boolean;
+}
+
+interface ServiceInput {
+  type: 'TEST' | 'LECTURE' | 'CONSULTING' | 'ACTIVITY' | 'ETC' | 'REPORT';
+  details: Prisma.JsonValue;
+}
+
+interface DealInput {
+  companyName: string;
+  managerName?: string;
+  contactInfo?: Prisma.JsonValue;
+  status: string;
+  memo?: string;
+  checklists?: Prisma.JsonValue;
+  services?: ServiceInput[];
+  paymentSchedules?: PaymentScheduleInput[];
+}
+
+async function getUserId(session: Session | null) {
+  let userId: string;
+  
+  if (session?.user?.email) {
+    let user = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: session.user.email,
+          name: session.user.name || 'User',
+        }
+      });
+    }
+    userId = user.id;
+  } else {
+    let defaultUser = await prisma.user.findFirst({
+      where: { email: 'default@example.com' }
+    });
+    
+    if (!defaultUser) {
+      defaultUser = await prisma.user.create({
+        data: {
+          email: 'default@example.com',
+          name: 'Default User',
+        }
+      });
+    }
+    userId = defaultUser.id;
+  }
+  
+  return userId;
+}
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
-    let userId: string;
-    
-    if (session?.user?.email) {
-      // Find user by email
-      let user = await prisma.user.findUnique({
-        where: { email: session.user.email }
-      });
-
-      if (!user) {
-        // Create user if not exists
-        user = await prisma.user.create({
-          data: {
-            email: session.user.email,
-            name: session.user.name || 'User',
-          }
-        });
-      }
-      userId = user.id;
-    } else {
-      // For development: create or find a default user
-      let defaultUser = await prisma.user.findFirst({
-        where: { email: 'default@example.com' }
-      });
-      
-      if (!defaultUser) {
-        defaultUser = await prisma.user.create({
-          data: {
-            email: 'default@example.com',
-            name: 'Default User',
-          }
-        });
-      }
-      userId = defaultUser.id;
-    }
+    const userId = await getUserId(session);
 
     const deals = await prisma.deal.findMany({
       where: {
@@ -79,49 +104,15 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    let userId: string;
-    
-    if (session?.user?.email) {
-      // Find user by email
-      let user = await prisma.user.findUnique({
-        where: { email: session.user.email }
-      });
+    const userId = await getUserId(session);
 
-      if (!user) {
-        // Create user if not exists
-        user = await prisma.user.create({
-          data: {
-            email: session.user.email,
-            name: session.user.name || 'User',
-          }
-        });
-      }
-      userId = user.id;
-    } else {
-      // For development: create or find a default user
-      let defaultUser = await prisma.user.findFirst({
-        where: { email: 'default@example.com' }
-      });
-      
-      if (!defaultUser) {
-        defaultUser = await prisma.user.create({
-          data: {
-            email: 'default@example.com',
-            name: 'Default User',
-          }
-        });
-      }
-      userId = defaultUser.id;
-    }
-
-    const body = await request.json();
+    const body: DealInput = await request.json();
     console.log('Received body:', JSON.stringify(body, null, 2));
     
     const { services, paymentSchedules, ...dealData } = body;
 
     // Process payment schedules to convert date strings to Date objects
-    const processedPaymentSchedules = paymentSchedules?.map((schedule: any) => {
+    const processedPaymentSchedules = paymentSchedules?.map((schedule: PaymentScheduleInput) => {
       console.log('Processing schedule:', schedule);
       return {
         ...schedule,
@@ -138,12 +129,12 @@ export async function POST(request: NextRequest) {
         ...dealData,
         userId: userId,
         services: {
-          create: services || [],
+          create: (services || []) as Prisma.ServiceCreateWithoutDealInput[],
         },
         paymentSchedules: {
           create: processedPaymentSchedules,
         },
-      },
+      } as Prisma.DealUncheckedCreateInput,
       include: {
         services: true,
         paymentSchedules: true,
@@ -163,7 +154,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating deal:', error);
     return NextResponse.json(
-      { error: 'Failed to create deal', details: error.message },
+      { error: 'Failed to create deal', details: (error as Error).message },
       { status: 500 }
     );
   }
@@ -172,40 +163,9 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    let userId: string;
-    
-    if (session?.user?.email) {
-      let user = await prisma.user.findUnique({
-        where: { email: session.user.email }
-      });
+    const userId = await getUserId(session);
 
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            email: session.user.email,
-            name: session.user.name || 'User',
-          }
-        });
-      }
-      userId = user.id;
-    } else {
-      let defaultUser = await prisma.user.findFirst({
-        where: { email: 'default@example.com' }
-      });
-      
-      if (!defaultUser) {
-        defaultUser = await prisma.user.create({
-          data: {
-            email: 'default@example.com',
-            name: 'Default User',
-          }
-        });
-      }
-      userId = defaultUser.id;
-    }
-
-    const body = await request.json();
+    const body: DealInput & { id: string } = await request.json();
     const { id, services, paymentSchedules, ...dealData } = body;
 
     if (!id) {
@@ -228,7 +188,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Process payment schedules
-    const processedPaymentSchedules = paymentSchedules?.map((schedule: any) => ({
+    const processedPaymentSchedules = paymentSchedules?.map((schedule: PaymentScheduleInput) => ({
       ...schedule,
       dueDate: new Date(schedule.dueDate),
       amount: BigInt(schedule.amount)
@@ -241,13 +201,13 @@ export async function PUT(request: NextRequest) {
         ...dealData,
         services: {
           deleteMany: {},
-          create: services || [],
+          create: (services || []) as Prisma.ServiceCreateWithoutDealInput[],
         },
         paymentSchedules: {
           deleteMany: {},
           create: processedPaymentSchedules,
         },
-      },
+      } as Prisma.DealUncheckedUpdateInput,
       include: {
         services: true,
         paymentSchedules: true,
@@ -267,7 +227,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating deal:', error);
     return NextResponse.json(
-      { error: 'Failed to update deal', details: error.message },
+      { error: 'Failed to update deal', details: (error as Error).message },
       { status: 500 }
     );
   }
@@ -276,34 +236,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    let userId: string;
-    
-    if (session?.user?.email) {
-      let user = await prisma.user.findUnique({
-        where: { email: session.user.email }
-      });
-
-      if (!user) {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        );
-      }
-      userId = user.id;
-    } else {
-      let defaultUser = await prisma.user.findFirst({
-        where: { email: 'default@example.com' }
-      });
-      
-      if (!defaultUser) {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        );
-      }
-      userId = defaultUser.id;
-    }
+    const userId = await getUserId(session);
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -336,7 +269,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Error deleting deal:', error);
     return NextResponse.json(
-      { error: 'Failed to delete deal', details: error.message },
+      { error: 'Failed to delete deal', details: (error as Error).message },
       { status: 500 }
     );
   }

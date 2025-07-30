@@ -12,31 +12,20 @@ interface EditDealModalProps {
 }
 
 interface ServiceDetails {
-  // 공통
   target?: string;
   price?: number;
   count?: number;
   memo?: string;
-
-  // 검사 전용
   premium?: boolean;
   standard?: boolean;
   duration?: string;
   resultMethod?: string;
-
-  // 강연 전용
   content?: string;
   schedule?: string;
   dispatchCount?: number;
-
-  // 컨설팅 전용
   inPerson?: boolean;
   remote?: boolean;
-
-  // 액티비티 전용
   activityCost?: number;
-
-  // 보고서 전용
   submitDate?: string;
 }
 
@@ -55,7 +44,7 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
       phone: '',
       email: ''
     },
-    status: 'PROSPECT' as const,
+    status: 'PROSPECT' as 'PROSPECT' | 'ONGOING' | 'CARRIED_OVER' | 'COMPLETED' | 'HOLD',
     memo: ''
   });
 
@@ -109,7 +98,7 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
           phone: contactInfo.phone || '',
           email: contactInfo.email || ''
         },
-        status: deal.status as any,
+        status: deal.status as 'PROSPECT' | 'ONGOING' | 'CARRIED_OVER' | 'COMPLETED' | 'HOLD',
         memo: deal.memo || ''
       });
 
@@ -272,7 +261,7 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
             </button>
           </div>
 
-          {/* Content - Same as AddDealModal but with pre-filled data */}
+          {/* Content */}
           <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-gray-50/50 to-blue-50/30 min-h-0">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-4">
               {/* Left Section - Basic Info */}
@@ -344,7 +333,7 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
                       <label className="block text-sm font-semibold text-gray-700 mb-2 korean-text">상태</label>
                       <select
                         value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value as 'PROSPECT' | 'ONGOING' | 'CARRIED_OVER' | 'COMPLETED' | 'HOLD' })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white/80 transition-all duration-200 korean-text"
                       >
                         {statusOptions.map(option => (
@@ -378,7 +367,6 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
                   </h3>
 
                   <div className="space-y-6">
-                    {/* 견적서/계약서 공유 */}
                     <div className="bg-gray-50/70 rounded-lg p-4">
                       <h4 className="font-semibold text-gray-900 mb-3 korean-text">견적서/계약서 공유</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -427,7 +415,6 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
                       </div>
                     </div>
 
-                    {/* 코드발급 */}
                     <div className="bg-gray-50/70 rounded-lg p-4">
                       <h4 className="font-semibold text-gray-900 mb-3 korean-text">코드발급</h4>
                       <label className="flex items-center p-2 bg-white rounded-md hover:bg-gray-50 transition-colors cursor-pointer">
@@ -441,7 +428,6 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
                       </label>
                     </div>
 
-                    {/* 보고서 제출 */}
                     <div className="bg-gray-50/70 rounded-lg p-4">
                       <h4 className="font-semibold text-gray-900 mb-3 korean-text">보고서 제출</h4>
                       <label className="flex items-center p-2 bg-white rounded-md hover:bg-gray-50 transition-colors cursor-pointer">
@@ -481,13 +467,6 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
                     {paymentSchedules.map((schedule, index) => (
                       <div key={index} className="flex items-center gap-3 p-3 bg-gray-50/70 rounded-lg">
                         <input
-                          type="checkbox"
-                          checked={schedule.isPaid || false}
-                          onChange={(e) => handlePaymentScheduleChange(index, 'isPaid', e.target.checked)}
-                          className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                          title="입금 완료"
-                        />
-                        <input
                           type="date"
                           value={schedule.dueDate}
                           onChange={(e) => handlePaymentScheduleChange(index, 'dueDate', e.target.value)}
@@ -507,6 +486,15 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
                           placeholder="설명"
                         />
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={schedule.isPaid || false}
+                            onChange={(e) => handlePaymentScheduleChange(index, 'isPaid', e.target.checked)}
+                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700 korean-text">입금완료</span>
+                        </label>
                         <button
                           type="button"
                           onClick={() => removePaymentSchedule(index)}
@@ -522,7 +510,7 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
                 </div>
               </div>
 
-              {/* Right Section - Services (same structure as AddDealModal) */}
+              {/* Right Section - Services */}
               <div className="space-y-6">
                 <div className="bg-white/90 backdrop-blur-md border border-white/30 rounded-xl p-6 shadow-lg">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center korean-text">
@@ -539,27 +527,26 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
                       <div key={type} className="flex items-center p-3 bg-gray-50/50 rounded-lg hover:bg-gray-100/50 transition-colors">
                         <input
                           type="checkbox"
-                          id={`edit-${type}`}
+                          id={type}
                           checked={selectedServices.has(type as ServiceType)}
                           onChange={() => handleServiceToggle(type as ServiceType)}
                           className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                         />
-                        <label htmlFor={`edit-${type}`} className="ml-3 text-sm text-gray-700 font-medium cursor-pointer korean-text">
+                        <label htmlFor={type} className="ml-3 text-sm text-gray-700 font-medium cursor-pointer korean-text">
                           {label}
                         </label>
                       </div>
                     ))}
                   </div>
 
-                  {/* Service Details - Same structure as AddDealModal but with edit prefix for IDs */}
+                  {/* Service Details */}
                   <div className="space-y-4">
                     {Array.from(selectedServices).map(serviceType => (
                       <div key={serviceType} className="p-4 bg-gradient-to-r from-gray-50/80 to-blue-50/50 border border-gray-200/50 rounded-lg">
                         <h4 className="font-semibold text-gray-900 mb-3 korean-text">
                           {serviceTypeLabels[serviceType]} 상세
                         </h4>
-                        
-                        {/* Service type specific forms - same as AddDealModal */}
+
                         {serviceType === 'TEST' && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="sm:col-span-2">
@@ -645,37 +632,347 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
                                 placeholder="추가 메모"
                               />
                             </div>
-                            <div className="sm:col-span-2 pt-2 border-t border-gray-200">
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-600 korean-text">검사비용 (가격×인원):</span>
-                                <span className="text-lg font-bold text-green-600 korean-text">
-                                  ₩{((serviceDetails[serviceType]?.price || 0) * (serviceDetails[serviceType]?.count || 0)).toLocaleString()}
-                                </span>
-                              </div>
+                          </div>
+                        )}
+
+                        {serviceType === 'LECTURE' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">대상</label>
+                              <input
+                                type="text"
+                                value={serviceDetails[serviceType]?.target || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'target', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="대상자"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">가격</label>
+                              <input
+                                type="number"
+                                value={serviceDetails[serviceType]?.price || 0}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'price', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">인원</label>
+                              <input
+                                type="number"
+                                value={serviceDetails[serviceType]?.count || 1}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'count', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                                placeholder="1"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">파견인원</label>
+                              <input
+                                type="number"
+                                value={serviceDetails[serviceType]?.dispatchCount || 1}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'dispatchCount', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                                placeholder="1"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">강연내용</label>
+                              <textarea
+                                value={serviceDetails[serviceType]?.content || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'content', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="강연 내용"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">일정</label>
+                              <input
+                                type="text"
+                                value={serviceDetails[serviceType]?.schedule || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'schedule', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="일정"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">메모</label>
+                              <textarea
+                                value={serviceDetails[serviceType]?.memo || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'memo', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="추가 메모"
+                              />
                             </div>
                           </div>
                         )}
-                        {/* Add other service types here - same as AddDealModal */}
+
+                        {serviceType === 'CONSULTING' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-2 korean-text">진행방식</label>
+                              <div className="flex gap-4">
+                                <label className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={serviceDetails[serviceType]?.inPerson || false}
+                                    onChange={(e) => handleServiceDetailChange(serviceType, 'inPerson', e.target.checked)}
+                                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                  />
+                                  <span className="ml-2 text-sm text-gray-700 korean-text">대면</span>
+                                </label>
+                                <label className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={serviceDetails[serviceType]?.remote || false}
+                                    onChange={(e) => handleServiceDetailChange(serviceType, 'remote', e.target.checked)}
+                                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                  />
+                                  <span className="ml-2 text-sm text-gray-700 korean-text">비대면</span>
+                                </label>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">대상</label>
+                              <input
+                                type="text"
+                                value={serviceDetails[serviceType]?.target || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'target', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="대상자"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">가격</label>
+                              <input
+                                type="number"
+                                value={serviceDetails[serviceType]?.price || 0}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'price', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">인원</label>
+                              <input
+                                type="number"
+                                value={serviceDetails[serviceType]?.count || 1}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'count', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                                placeholder="1"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">파견인원</label>
+                              <input
+                                type="number"
+                                value={serviceDetails[serviceType]?.dispatchCount || 1}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'dispatchCount', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                                placeholder="1"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">일정</label>
+                              <input
+                                type="text"
+                                value={serviceDetails[serviceType]?.schedule || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'schedule', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="일정"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">메모</label>
+                              <textarea
+                                value={serviceDetails[serviceType]?.memo || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'memo', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="추가 메모"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {serviceType === 'ACTIVITY' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-2 korean-text">진행방식</label>
+                              <div className="flex gap-4">
+                                <label className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={serviceDetails[serviceType]?.inPerson || false}
+                                    onChange={(e) => handleServiceDetailChange(serviceType, 'inPerson', e.target.checked)}
+                                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                  />
+                                  <span className="ml-2 text-sm text-gray-700 korean-text">대면</span>
+                                </label>
+                                <label className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={serviceDetails[serviceType]?.remote || false}
+                                    onChange={(e) => handleServiceDetailChange(serviceType, 'remote', e.target.checked)}
+                                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                  />
+                                  <span className="ml-2 text-sm text-gray-700 korean-text">비대면</span>
+                                </label>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">대상</label>
+                              <input
+                                type="text"
+                                value={serviceDetails[serviceType]?.target || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'target', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="대상자"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">액티비티 비용</label>
+                              <input
+                                type="number"
+                                value={serviceDetails[serviceType]?.activityCost || 0}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'activityCost', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">파견인원</label>
+                              <input
+                                type="number"
+                                value={serviceDetails[serviceType]?.dispatchCount || 1}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'dispatchCount', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                                placeholder="1"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">일정</label>
+                              <input
+                                type="text"
+                                value={serviceDetails[serviceType]?.schedule || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'schedule', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="일정"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">메모</label>
+                              <textarea
+                                value={serviceDetails[serviceType]?.memo || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'memo', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="추가 메모"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {serviceType === 'ETC' && (
+                          <div className="grid grid-cols-1 gap-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">대상</label>
+                              <input
+                                type="text"
+                                value={serviceDetails[serviceType]?.target || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'target', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="대상자"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">가격</label>
+                              <input
+                                type="number"
+                                value={serviceDetails[serviceType]?.price || 0}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'price', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">내용</label>
+                              <textarea
+                                value={serviceDetails[serviceType]?.content || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'content', e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="기타 내용"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">메모</label>
+                              <textarea
+                                value={serviceDetails[serviceType]?.memo || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'memo', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="추가 메모"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {serviceType === 'REPORT' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">대상</label>
+                              <input
+                                type="text"
+                                value={serviceDetails[serviceType]?.target || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'target', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="대상자"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">가격</label>
+                              <input
+                                type="number"
+                                value={serviceDetails[serviceType]?.price || 0}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'price', Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">제출일</label>
+                              <input
+                                type="date"
+                                value={serviceDetails[serviceType]?.submitDate || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'submitDate', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1 korean-text">메모</label>
+                              <textarea
+                                value={serviceDetails[serviceType]?.memo || ''}
+                                onChange={(e) => handleServiceDetailChange(serviceType, 'memo', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 korean-text"
+                                placeholder="추가 메모"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
-                </div>
 
-                {/* Total Summary */}
-                <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-sm border border-blue-200/50 rounded-xl p-6 shadow-lg">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center korean-text">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    견적 요약
-                  </h3>
-
-                  <div className="bg-white/70 rounded-lg p-4">
+                  {/* Total Quote Display */}
+                  <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-base font-semibold text-gray-700 korean-text">총 견적가:</span>
-                      <span className="text-2xl font-bold text-blue-600 korean-text">
+                      <span className="text-lg font-semibold text-gray-900 korean-text">총 견적가</span>
+                      <span className="text-2xl font-bold text-green-600 korean-text">
                         ₩{calculateTotalQuote().toLocaleString()}
                       </span>
                     </div>
@@ -686,26 +983,21 @@ const EditDealModal: React.FC<EditDealModalProps> = ({ isOpen, onClose, onSucces
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between items-center p-6 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-blue-50/50 backdrop-blur-sm">
-            <div className="text-sm text-gray-600 korean-text">
-              * 필수 입력 항목
-            </div>
-            <div className="flex space-x-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-2 text-sm font-medium text-gray-700 bg-white/80 backdrop-blur-sm border border-gray-300 rounded-lg hover:bg-white transition-all duration-200 korean-text"
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting || !formData.companyName}
-                className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed korean-text"
-              >
-                {isSubmitting ? '저장 중...' : '수정 완료'}
-              </button>
-            </div>
+          <div className="flex items-center justify-end gap-4 p-6 border-t border-gray-200/50 bg-white/90 backdrop-blur-md">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md korean-text"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed korean-text"
+            >
+              {isSubmitting ? '수정 중...' : '수정 완료'}
+            </button>
           </div>
         </form>
       </div>

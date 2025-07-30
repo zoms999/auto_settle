@@ -53,7 +53,7 @@ const AddDealModal: React.FC<AddDealModalProps> = ({ isOpen, onClose, onSuccess 
       phone: '',
       email: ''
     },
-    status: 'PROSPECT' as const,
+    status: 'PROSPECT' as 'PROSPECT' | 'ONGOING' | 'CARRIED_OVER' | 'COMPLETED' | 'HOLD',
     memo: ''
   });
 
@@ -107,7 +107,7 @@ const AddDealModal: React.FC<AddDealModalProps> = ({ isOpen, onClose, onSuccess 
     setSelectedServices(newSelected);
   };
 
-  const handleServiceDetailChange = (serviceType: ServiceType, field: keyof ServiceDetails, value: string | number) => {
+  const handleServiceDetailChange = (serviceType: ServiceType, field: keyof ServiceDetails, value: string | number | boolean) => {
     setServiceDetails({
       ...serviceDetails,
       [serviceType]: {
@@ -308,7 +308,7 @@ const AddDealModal: React.FC<AddDealModalProps> = ({ isOpen, onClose, onSuccess 
                       <label className="block text-sm font-semibold text-gray-700 mb-2 korean-text">상태</label>
                       <select
                         value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value as 'PROSPECT' | 'ONGOING' | 'CARRIED_OVER' | 'COMPLETED' | 'HOLD' })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white/80 transition-all duration-200 korean-text"
                       >
                         {statusOptions.map(option => (
